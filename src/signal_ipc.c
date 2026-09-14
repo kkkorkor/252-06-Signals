@@ -108,25 +108,47 @@ int run_supervisor(pid_t worker_pid) {
 
     /* TODO: call sigwait() to wait for SIGUSR1 (worker ready notification).
      *       Discard the received signal number. Return 1 on error. */
+    int sig = 0;
+
+    if (sigwait(&wait_mask, &sig) != 0) {
+        return 1;
+    }
 
     for (int i = 1; i <= NUM_TASKS; i++) {
         printf("supervisor: sending task %d\n", i);
         fflush(stdout);
 
         /* TODO: send SIGUSR1 to worker_pid. */
+        if (kill(worker_pid, SIGUSR1) == -1) {
+            return 1;
+        }
 
         /* TODO: call sigwait() to wait for SIGUSR1 ack from the worker. */
+        int sig = 0;
+
+        if (sigwait(&wait_mask, &sig) != 0) {
+            return 1;
+        }
     }
 
     printf("supervisor: shutting down worker\n");
     fflush(stdout);
 
     /* TODO: send SIGUSR2 to worker_pid (shutdown command). */
+    if (kill(worker_pid, SIGUSR2) == -1) {
+        return 1;
+    }
 
     /* TODO: call sigwait() to wait for SIGCHLD (worker exit notification). */
+    if (sigwait(&wait_mask, &sig) != 0) {
+        return 1;
+    }
 
     int status;
     /* TODO: call waitpid() to reap the worker. Use worker_pid, &status, 0. */
+    if (waitpid(worker_pid, &status, 0) == -1) {
+        return 1;
+    }
     (void)status;
 
     printf("supervisor: worker exited cleanly\n");
